@@ -1,0 +1,55 @@
+{
+  "_comment": "Starting values for the detection experiment. Tune these after comparing with your labelled ground truth.",
+
+  "analysis": {
+    "fps": 5,
+    "width": 320,
+    "height": 180,
+    "audio_rate": 16000
+  },
+
+  "audio": {
+    "background_window_s": 30,
+    "min_rise_db": 6.0
+  },
+
+  "motion": {
+    "static_diff": 1.2,
+    "static_min_s": 3.0,
+    "black_luma": 12,
+    "residual_floor": 6.0,
+    "cut_hist_corr": 0.45
+  },
+
+  "score": {
+    "w_audio_rise": 0.35,
+    "w_audio_onset": 0.30,
+    "w_residual": 0.25,
+    "w_camera": 0.10,
+    "smooth_s": 1.0,
+    "min_score": 1.2
+  },
+
+  "peaks": {
+    "min_gap_s": 10,
+    "merge_gap_s": 6,
+    "max_candidates": 30
+  },
+
+  "context": {
+    "generic":       {"pre": 8,  "post": 4},
+    "death":         {"pre": 12, "post": 3},
+    "boss_death":    {"pre": 15, "post": 3},
+    "boss_victory":  {"pre": 35, "post": 8},
+    "marker":        {"pre": 8,  "post": 4},
+    "snap_max_s": 1.5
+  },
+
+  "contact_sheet": {
+    "frames": 12,
+    "cols": 4,
+    "tile_w": 384,
+    "tile_h": 216,
+    "jpeg_quality": 85
+  }
+}

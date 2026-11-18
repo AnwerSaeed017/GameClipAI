@@ -1,0 +1,6 @@
+recording,start,end,event,interesting,notes
+# recording = video file name without extension. Times in seconds or mm:ss. Copy to ground_truth.csv.
+# Label BOTH kinds: moments you would post (interesting=true) and loud/busy/menu moments you would NOT (false).
+example_session,1:12,1:31,boss_victory,true,finally beat the boss
+example_session,3:05,3:20,death,false,ordinary death - not worth posting
+example_session,4:40,5:10,menu,false,inventory screen

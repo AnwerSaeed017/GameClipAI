@@ -1,0 +1,32 @@
+{
+  "title": "Two Worlds. Two Fights.",
+  "output": "exports/shorts/two-worlds/two-worlds-two-fights.mp4",
+  "encoder": "qsv",
+  "thumbnail_t": 3.6,
+  "_notes": "Times are seconds inside each source clip, chosen from full-clip contact sheets. Both sources are PS5 trophy auto-captures. The Ghost of Yotei clip shows the fight in the Spider's hideout, NOT the Spider's defeat, so it is captioned as a fight. Caption styles: see scripts/captions.py (*word* = yellow highlight).",
+  "segments": [
+    {
+      "src": "input/elden_ring_20230311141428.mp4",
+      "in": 0.0,
+      "out": 10.8,
+      "event": "Loretta, Knight of the Haligtree - killing blow ~4 s, GREAT ENEMY FELLED banner ~7.4-9.4 s",
+      "fade_in": 0.0,
+      "texts": [
+        {"lines": ["TWO WORLDS.", "TWO *FIGHTS.*"], "style": "hook", "start": 0.0, "end": 2.7, "y": 300, "size": 150},
+        {"lines": ["ELDEN RING"], "style": "label", "start": 2.7, "end": 10.8, "y": 470, "size": 46},
+        {"lines": ["*LORETTA,*", "KNIGHT OF THE HALIGTREE"], "style": "caption", "start": 2.9, "end": 10.8, "y": 1310, "size": 80}
+      ]
+    },
+    {
+      "src": "input/ghost_of_yotei_20260526054759.mp4",
+      "in": 0.8,
+      "out": 14.6,
+      "event": "Fight in the Spider's hideout; slow-motion strike ~7.3-8.8 s. The Spider is NOT defeated in this clip.",
+      "texts": [
+        {"lines": ["GHOST OF YŌTEI"], "style": "label", "start": 0.0, "end": 13.8, "y": 470, "size": 46},
+        {"lines": ["THE SPIDER'S HIDEOUT", "ONE BLADE VS *MANY*"], "style": "caption", "start": 0.2, "end": 10.2, "y": 1310, "size": 80},
+        {"lines": ["WHICH WORLD NEXT?"], "style": "cta", "start": 10.4, "end": 13.8, "y": 1330, "size": 80}
+      ]
+    }
+  ]
+}

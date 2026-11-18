@@ -1,0 +1,31 @@
+{
+  "_comment": "FORMAT EXAMPLE ONLY - not a working profile. Real profiles are built with make_template.py from your own footage. Copy to profiles/<game>/profile.json once templates exist.",
+  "name": "example_game",
+  "calibrated": false,
+  "analysis_width": 640,
+  "analysis_height": 360,
+
+  "markers": [
+    {"id": "boss_bar",  "event": "boss_bar", "template": "templates/boss_bar.png",  "ref_width": 640, "roi": [0.15, 0.78, 0.70, 0.12], "threshold": 0.70, "min_duration_s": 1.0, "gap_fill_s": 4},
+    {"id": "died",      "event": "death",    "template": "templates/died.png",      "ref_width": 640, "roi": [0.25, 0.38, 0.50, 0.20], "threshold": 0.70, "min_duration_s": 0.6},
+    {"id": "felled",    "event": "victory",  "template": "templates/felled.png",    "ref_width": 640, "roi": [0.20, 0.38, 0.60, 0.20], "threshold": 0.70, "min_duration_s": 0.6}
+  ],
+
+  "encounters": [
+    {
+      "name": "boss fight",
+      "while": "boss_bar",
+      "gap_fill_s": 4,
+      "inside":    {"death": "boss_death"},
+      "ends_with": {"victory": {"within_s": 15, "kind": "boss_victory"}},
+      "unconfirmed_end_kind": "boss_encounter_end"
+    }
+  ],
+
+  "context": {
+    "boss_victory": {"pre": 35, "post": 8},
+    "boss_death":   {"pre": 15, "post": 3}
+  },
+
+  "_other_genres": "Same mechanism, different data: a fighting game uses 'while': 'round_health_bars' with 'ends_with': {'ko': {...}}; a horror game can use a boss bar or a death screen; an open-world game can use mission-passed / wasted banners as plain markers. Games with no profile still get universal analysis."
+}

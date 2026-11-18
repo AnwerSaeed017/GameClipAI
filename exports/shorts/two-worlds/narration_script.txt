@@ -1,0 +1,11 @@
+OPTIONAL narration for "Two Worlds. Two Fights." (not used in v1 - Kokoro model not downloaded yet,
+and this Short works on game audio + text). Timed to the current cut, ~2.3 words/second.
+
+[0.0 - 2.7]   Two worlds. Two fights.
+[3.0 - 10.5]  Loretta guards the Haligtree with a blade of light. One cursed slash ends it.
+[11.0 - 21.0] The Spider's hideout. His men keep coming - and time slows for every one of them.
+[21.5 - 24.5] So which world do I conquer next?
+
+Note: every line describes only what is visible on screen. Loretta's defeat is confirmed by the
+"GREAT ENEMY FELLED" banner; the Spider himself is NOT defeated in this footage, so the script
+doesn't claim it.

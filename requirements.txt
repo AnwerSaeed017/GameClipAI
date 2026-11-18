@@ -1,0 +1,13 @@
+# Python 3.12 (Windows). Install into a virtual environment, see SETUP.md
+numpy==2.5.5
+scipy==1.18.1
+opencv-python-headless==5.0.0.93
+pillow==13.0.0
+matplotlib==3.11.2
+
+# narration (local text-to-speech) - optional, only for tts.py / render_long.py narration
+kokoro-onnx==0.6.1
+onnxruntime==1.32.0
+
+# reading PDF briefs - optional
+pypdf==7.1.0

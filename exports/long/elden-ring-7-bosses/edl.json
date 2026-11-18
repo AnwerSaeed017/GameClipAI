@@ -1,0 +1,39 @@
+﻿{
+  "title": "Elden Ring - 7 Bosses, 7 Kills",
+  "output": "exports/long/elden-ring-7-bosses/elden-ring-7-bosses.mp4",
+  "encoder": "qsv",
+  "_notes": "Long-form PIPELINE TEST built from 7 PS5 trophy captures. Boss names read from each clip's trophy notification; each kill confirmed by a GREAT ENEMY FELLED / LEGEND FELLED banner. Order = recording date. Captions at the top so they never cover the game's boss health bar.",
+  "segments": [
+    {"type": "card", "dur": 3.5, "lines": ["ELDEN RING", "7 BOSSES. *7 KILLS.*"], "src": "input/elden_ring_20230311141428.mp4", "t": 3.7},
+    {"src": "input/elden_ring_20220507203517.mp4", "in": 0.0, "out": 10.8, "chapter": "Ancestor Spirit", "texts": [
+      {"lines": ["BOSS 1 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["*ANCESTOR* SPIRIT"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20220508051458.mp4", "in": 0.0, "out": 10.8, "chapter": "Valiant Gargoyle", "texts": [
+      {"lines": ["BOSS 2 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["VALIANT *GARGOYLE*"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20220520011048.mp4", "in": 0.0, "out": 10.8, "chapter": "Godskin Duo", "texts": [
+      {"lines": ["BOSS 3 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["GODSKIN *DUO*"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20220520172600.mp4", "in": 0.0, "out": 10.8, "chapter": "Hoarah Loux the Warrior", "texts": [
+      {"lines": ["BOSS 4 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["*HOARAH LOUX* THE WARRIOR"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20230311141428.mp4", "in": 0.0, "out": 10.8, "chapter": "Loretta, Knight of the Haligtree", "texts": [
+      {"lines": ["BOSS 5 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["*LORETTA,* KNIGHT OF THE HALIGTREE"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20230312201133.mp4", "in": 0.0, "out": 10.8, "chapter": "Regal Ancestor Spirit", "texts": [
+      {"lines": ["BOSS 6 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["*REGAL* ANCESTOR SPIRIT"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"src": "input/elden_ring_20230312204122.mp4", "in": 0.0, "out": 10.8, "chapter": "Dragonlord Placidusax", "texts": [
+      {"lines": ["BOSS 7 / 7"], "style": "label", "start": 0.2, "end": 4.6, "y": 40, "size": 34},
+      {"lines": ["DRAGONLORD *PLACIDUSAX*"], "style": "caption", "start": 0.35, "end": 4.6, "y": 100, "size": 76}]},
+    {"type": "card", "dur": 3.0, "lines": ["WHAT'S NEXT?", "WHICH BOSS *SHOULD I FIGHT?*"], "src": "input/elden_ring_20230312204122.mp4", "t": 1.9}
+  ],
+  "narration": {
+    "voice": "am_michael",
+    "lines": [
+      {"at": 0.4, "text": "Seven bosses. Seven kills. Here is every one of them."},
+      {"at": 36.6, "text": "Hoarah Loux, the Warrior. A legend, felled."},
+      {"at": 79.4, "text": "Which boss should I fight next?"}
+    ]
+  }
+}

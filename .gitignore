@@ -1,0 +1,51 @@
+# ---- Python / environment ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+.cache/
+temp/
+
+# ---- Secrets (never commit) ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets*.json
+credentials*.json
+.claude/settings.local.json
+
+# ---- Media: recordings, renders, audio, images ----
+input/
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.flac
+
+# ---- Generated output ----
+analysis/
+models/
+tests/fixtures/
+exports/**/work/
+exports/**/*.jpg
+exports/**/*.png
+exports/**/render_log.txt
+exports/**/output_metadata.json
+
+# ---- Personal data (each person keeps their own) ----
+dataset/*.csv
+!dataset/*.template.csv
+profiles/_synthetic_test/
+
+# ---- OS / editor ----
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
