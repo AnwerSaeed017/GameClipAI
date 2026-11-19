@@ -37,13 +37,34 @@ def _tokens(line: str) -> list[tuple[str, bool]]:
     return out
 
 
+PROJECT_FONTS = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+
+
+def _rgb(c) -> tuple[int, int, int]:
+    if isinstance(c, str):
+        c = c.lstrip("#")
+        return int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+    return tuple(c)
+
+
 def render_caption(spec: dict, path: Path, max_w: int) -> tuple[int, int]:
-    st = STYLES[spec.get("style", "caption")]
+    st = dict(STYLES[spec.get("style", "caption")])
+    # optional per-caption overrides, e.g. to match the karaoke subtitles:
+    #   "font": "Montserrat-Black.ttf", "hi": "#FF4FA0", "pill": "#FF4FA0", "outline": "#19052D"
+    for k in ("hi", "pill"):
+        if spec.get(k):
+            st[k] = _rgb(spec[k])
+    if spec.get("font"):
+        st["font"] = spec["font"]
+    outline = _rgb(spec.get("outline", BLACK))
+    font_path = PROJECT_FONTS / st["font"]
+    if not font_path.exists():
+        font_path = FONT_DIR / st["font"]
     size = int(spec.get("size", 72))
     lines = spec["lines"]
 
     def font_for(s):
-        return ImageFont.truetype(str(FONT_DIR / st["font"]), s)
+        return ImageFont.truetype(str(font_path), s)
 
     # shrink until the widest line fits
     while True:
@@ -81,7 +102,7 @@ def render_caption(spec: dict, path: Path, max_w: int) -> tuple[int, int]:
         y = margin + pad_y + i * line_h
         for tok, hi in _tokens(ln):
             d.text((x, y), tok, font=font, fill=(st["hi"] if hi else st["fill"]) + (255,),
-                   stroke_width=sw, stroke_fill=BLACK + (255,))
+                   stroke_width=sw, stroke_fill=outline + (255,))
             x += font.getlength(tok)
     if st["shadow"] and not st["pill"]:
         alpha = text.split()[3]

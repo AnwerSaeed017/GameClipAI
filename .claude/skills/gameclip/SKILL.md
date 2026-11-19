@@ -18,6 +18,9 @@ All commands run from `D:\content-generation\GameClipAI` with `.venv\Scripts\pyt
 - Delete from the USB only when the user asks, and only after verifying file hashes against `input\`.
 
 ## 2. Analyze
+- GTA 6: always add `--profile gta6`. It detects the **WASTED** screen (template built 2026-11-19 from S1 35:23; scores 0.95-1.0 vs at most 0.45 on gameplay). Add MISSION PASSED or wanted-level banners with `make_template.py` when they first appear in footage.
+- `detect.py` also writes whole-session timeline pages (`--timeline-every 10`) and a music-likelihood signal from the same decode pass. The music signal is uncalibrated: it misses orchestral score. For radio, make 8 s listening clips of every driving segment you plan to use and ask the user.
+- Pass 2 (exact in/out points): `py> scripts\inspect_range.py input\<file> 18:00-21:50 --every 3`.
 - `py> scripts\probe.py input\<file>` for format and HDR.
 - `py> scripts\detect.py input\<file>`, adding `--profile <game>` if `profiles\<game>\profile.json` exists. `--hwaccel auto` is the default.
 - `py> scripts\overview.py input\<file> --every 10` builds whole-session timeline pages (30 frames = 5 min per page).
@@ -42,6 +45,17 @@ Present a compact numbered list (time, one line, proposed use). The user answers
 
 ## 5. Produce
 - Write an EDL like `exports\shorts\two-worlds\edl.json`, then `py> scripts\render_short.py <edl.json>`. It renders 1080x1920 with a blurred-background layout, Quick Sync encoding, loudness at -14 LUFS, and a QC report.
+- EDL features, in both renderers:
+  - `"speed": 2.0` for speed ramps.
+  - `"zoom": [{"at", "dur", "scale"}]` for punch-in emphasis.
+  - `"audio_from": {"src", "in"}` swaps in clean audio, e.g. replacing radio music with engine sound from another drive.
+  - `"game_audio": 0` mutes a segment.
+  - `"layout": "crop"` with `"crop_x"` keyframes for a full-screen 9:16 crop. Use the default blur layout when the whole subject must stay visible, e.g. cars.
+  - Top-level `"sfx": [{"seg", "at", "type": "whoosh"|"hit", "gain"}]`: synthesized, so no licensing issues.
+  - Times may be written as "mm:ss".
+- Before rendering: `py> scripts\render_long.py <edl> --plan` gives the exact timeline and chapters. `py> scripts\narrate.py <edl>` generates the narration once (cached) and checks it against MEASURED lengths.
+- Make a 60-90 s TikTok variant of each Short (slower montages) for TikTok Creator Rewards.
+- Thumbnails: `make_thumbnail_v3.py` (three scenes, a character cut-out, the GTA purple-pink-orange gradient headline). Celebratory tone; your own footage only, never official key art.
 - Long-form: `py> scripts\render_long.py <edl.json>` renders 1920x1080 with title cards, embedded chapters plus chapters.txt, and Kokoro narration placed at times, with the game audio ducking under it.
 - Captions (scripts/captions.py) are drawn as PNGs and slide in. Styles:
   - `hook`: huge, for 0-3 s. Starting at 0 makes it appear instantly.

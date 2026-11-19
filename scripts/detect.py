@@ -92,13 +92,17 @@ def load_profile(name: str | None, cfg: dict) -> tuple[dict, list[Marker]]:
 
 # =========================================================================== video signals
 
-def video_features(info, cfg, hwaccel, markers, log_path):
+def video_features(info, cfg, hwaccel, markers, log_path, timeline_every: float = 0.0):
     a = cfg["analysis"]
     win = cv2.createHanningWindow((MOTION_W, MOTION_H), cv2.CV_32F)
     rows = {k: [] for k in ("luma", "raw", "residual", "camera", "hist_corr")}
     mscores = {m.id: [] for m in markers}
+    tl_step = max(1, int(round(timeline_every * a["fps"]))) if timeline_every else 0
+    timeline_frames = []
     prev_g, prev_h = None, None
     for rgb in iter_frames(info, a["width"], a["height"], a["fps"], hwaccel=hwaccel, log_path=log_path):
+        if tl_step and len(rows["luma"]) % tl_step == 0:  # whole-session timeline from the same decode pass
+            timeline_frames.append((len(rows["luma"]) / a["fps"], cv2.resize(rgb, (320, 180))))
         small = cv2.resize(rgb, (MOTION_W, MOTION_H), interpolation=cv2.INTER_AREA)
         g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32)
         hsv = cv2.cvtColor(small, cv2.COLOR_RGB2HSV)
@@ -136,6 +140,7 @@ def video_features(info, cfg, hwaccel, markers, log_path):
         if len(out[k]) >= 3:
             out[k] = median_filter(out[k], size=3, mode="nearest").astype(np.float32)
     out["markers"] = {k: np.asarray(v, np.float32) for k, v in mscores.items()}
+    out["timeline_frames"] = timeline_frames
     return out
 
 
@@ -155,22 +160,53 @@ def audio_features(samples: np.ndarray, rate: int, fps: float, n: int, cfg: dict
             frames = np.lib.stride_tricks.sliding_window_view(samples, nfft)[::step]
             w = np.hanning(nfft).astype(np.float32)
             flux = np.zeros(len(frames), np.float32)
+            flat = np.ones(len(frames), np.float32)
+            b0, b1 = int(100 * nfft / rate), int(5000 * nfft / rate)
             prev = None
             for i in range(0, len(frames), 8192):
-                mag = np.log1p(10 * np.abs(np.fft.rfft(frames[i:i + 8192] * w, axis=1))).astype(np.float32)
+                lin = np.abs(np.fft.rfft(frames[i:i + 8192] * w, axis=1)).astype(np.float32)
+                mag = np.log1p(10 * lin)
                 if prev is not None:
                     mag_full = np.vstack([prev[None], mag])
                 else:
                     mag_full = np.vstack([mag[:1], mag])
                 flux[i:i + len(mag)] = np.maximum(0, np.diff(mag_full, axis=0)).sum(axis=1)
+                band = lin[:, b0:b1] + 1e-7
+                flat[i:i + len(mag)] = np.exp(np.log(band).mean(axis=1)) / band.mean(axis=1)
                 prev = mag[-1]
             # each analysis bin = max flux within it
             bin_idx = (np.arange(len(flux)) * step + nfft // 2) // hop
             keep = bin_idx < n
             np.maximum.at(onset, bin_idx[keep], flux[keep])
+            music = music_likelihood(flux, flat, rate / step, n, fps)
+    else:
+        music = np.zeros(n, np.float32)
     bg_size = max(3, int(cfg["audio"]["background_window_s"] * fps) | 1)
     bg = median_filter(db, size=bg_size, mode="nearest")
-    return {"audio_db": db, "audio_rise": (db - bg).astype(np.float32), "onset": onset}
+    return {"audio_db": db, "audio_rise": (db - bg).astype(np.float32), "onset": onset,
+            "music": music if samples.size > 1024 else np.zeros(n, np.float32)}
+
+
+def music_likelihood(flux: np.ndarray, flat: np.ndarray, frame_rate: float, n: int, fps: float) -> np.ndarray:
+    """0..1 per analysis frame: how much the audio looks like MUSIC (e.g. car radio) rather than engines/city.
+
+    Music = tonal (low spectral flatness) AND rhythmic (onset envelope repeats at a 70-180 BPM period).
+    Engine noise is noisy (flat), speech is tonal but not periodic. A heuristic flag for review, not proof.
+    """
+    win, hop = int(6 * frame_rate), int(1 * frame_rate)
+    lo, hi = int(frame_rate * 60 / 180), int(frame_rate * 60 / 70)
+    per_sec = []
+    env = flux - uniform_filter1d(flux, int(frame_rate))  # remove slow loudness changes
+    for s in range(0, max(1, len(flux) - win), hop):
+        e = env[s:s + win] - env[s:s + win].mean()
+        denom = float((e * e).sum()) + 1e-9
+        ac = np.array([(e[:-lag] * e[lag:]).sum() / denom for lag in range(lo, hi)])
+        beat = float(max(0.0, ac.max())) if ac.size else 0.0
+        tonal = float(1.0 - np.median(flat[s:s + win]))
+        per_sec.append(beat * tonal)
+    per_sec = np.asarray(per_sec, np.float32)
+    t_sec = (np.arange(n) / fps).astype(int) - 3  # window centre
+    return per_sec[np.clip(t_sec, 0, max(0, len(per_sec) - 1))] if per_sec.size else np.zeros(n, np.float32)
 
 
 # =========================================================================== helpers
@@ -461,20 +497,22 @@ def write_outputs(out_dir, info, sig, extra, cands, fps):
         for c in cands:
             w.writerow(c)
     with open(out_dir / "timeline.csv", "w", encoding="utf-8", newline="") as f:
-        cols = ["t", "luma", "raw", "residual", "camera", "hist_corr", "audio_db", "audio_rise", "onset", "score",
-                "gameplay"] + [f"m_{k}" for k in sig["markers"]]
+        cols = ["t", "luma", "raw", "residual", "camera", "hist_corr", "audio_db", "audio_rise", "onset", "music",
+                "score", "gameplay"] + [f"m_{k}" for k in sig["markers"]]
         w = csv.writer(f)
         w.writerow(cols)
         for i in range(len(sig["raw"])):
             w.writerow([round(i / fps, 2)] + [round(float(sig[k][i]), 3) for k in
-                        ("luma", "raw", "residual", "camera", "hist_corr", "audio_db", "audio_rise", "onset")] +
+                        ("luma", "raw", "residual", "camera", "hist_corr", "audio_db", "audio_rise", "onset",
+                         "music")] +
                        [round(float(extra["score"][i]), 3), int(extra["gameplay"][i])] +
                        [round(float(v[i]), 3) for v in sig["markers"].values()])
 
 
 # =========================================================================== main
 
-def analyze(path: Path, cfg: dict, profile_name: str | None, hwaccel: str, sheets: bool) -> dict:
+def analyze(path: Path, cfg: dict, profile_name: str | None, hwaccel: str, sheets: bool,
+            timeline_every: float = 0.0) -> dict:
     t0 = time.perf_counter()
     info = probe(path)
     if hwaccel == "auto":
@@ -493,8 +531,13 @@ def analyze(path: Path, cfg: dict, profile_name: str | None, hwaccel: str, sheet
           f"profile={profile.get('name')}  decode={hwaccel}")
 
     at = AudioThread(info, a["audio_rate"]); at.start()
-    sig = video_features(info, cfg, hwaccel, markers, log_path)
+    sig = video_features(info, cfg, hwaccel, markers, log_path, timeline_every)
     t_video = time.perf_counter() - t0
+    tl = sig.pop("timeline_frames", [])
+    if tl:
+        from overview import write_pages
+        pages = write_pages(tl, out_dir / "timeline")
+        print(f"  timeline: {pages} pages, one frame every {timeline_every:g}s -> {out_dir / 'timeline'}")
     at.join()
     if at.error:
         raise at.error
@@ -510,6 +553,8 @@ def analyze(path: Path, cfg: dict, profile_name: str | None, hwaccel: str, sheet
     snap_to_cuts(cands, sig["hist_corr"], cfg, fps, duration)
     for i, c in enumerate(cands, 1):
         c["rank"] = i
+        lo, hi = int(c["start"] * fps), max(int(c["start"] * fps) + 1, int(c["end"] * fps))
+        c["music_max"] = round(float(sig["music"][lo:hi].max()), 2) if hi <= len(sig["music"]) else 0.0
         c["start"], c["end"], c["peak_t"] = round(c["start"], 2), round(c["end"], 2), round(c["peak_t"], 2)
         c["start_ts"], c["end_ts"] = fmt_ts(c["start"]), fmt_ts(c["end"])
         if sheets:
@@ -531,6 +576,7 @@ def analyze(path: Path, cfg: dict, profile_name: str | None, hwaccel: str, sheet
         "candidates": len(cands),
         "by_kind": {k: sum(1 for c in cands if c["kind"] == k) for k in sorted({c["kind"] for c in cands})},
         "non_gameplay_pct": round(100 * float((~extra["gameplay"]).mean()), 1),
+        "music_likely_pct": round(100 * float((sig["music"] > 0.25).mean()), 1),
         "config": cfg,
     }
     (out_dir / "analysis.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -546,10 +592,12 @@ def main() -> None:
     ap.add_argument("--hwaccel", default="auto", choices=["auto", "none", "qsv", "d3d11va"])
     ap.add_argument("--config", type=Path)
     ap.add_argument("--no-sheets", action="store_true")
+    ap.add_argument("--timeline-every", type=float, default=10.0,
+                    help="also save whole-session timeline pages from the same decode pass (0 = off)")
     args = ap.parse_args()
     cfg = load_config(args.config)
     for v in list_videos(Path(args.target)):
-        analyze(v, cfg, args.profile, args.hwaccel, not args.no_sheets)
+        analyze(v, cfg, args.profile, args.hwaccel, not args.no_sheets, args.timeline_every)
 
 
 if __name__ == "__main__":

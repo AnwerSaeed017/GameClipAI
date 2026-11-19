@@ -47,7 +47,7 @@ def list_videos(target: Path) -> list[Path]:
 
 
 def fmt_ts(sec: float) -> str:
-    sec = max(0.0, sec)
+    sec = round(max(0.0, sec), 1)  # round first, so 3599.97 shows as 1:00:00.0, not 59:60.0
     h, rem = divmod(sec, 3600)
     m, s = divmod(rem, 60)
     return f"{int(h)}:{int(m):02d}:{s:04.1f}" if h >= 1 else f"{int(m):02d}:{s:04.1f}"

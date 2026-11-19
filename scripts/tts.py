@@ -47,7 +47,8 @@ SAMPLE_VOICES = {
     "af_heart": "US female, warm (top-rated voice)",
     "af_bella": "US female, expressive",
 }
-DEFAULT_VOICE = {"kokoro": "am_michael", "elevenlabs": "Adam"}
+CHANNEL_VOICE = "HfRP3cIhYLmeNHeTvkWK"  # the channel's chosen ElevenLabs narrator (chosen 2026-11-19)
+DEFAULT_VOICE = {"kokoro": "am_michael", "elevenlabs": CHANNEL_VOICE}
 # ElevenLabs premade voices usable by name even when the API key lacks the "Voices: Read" permission.
 # Adam was verified live on 2026-11-19; for others, run `tts.py voices` (needs that permission) or pass the ID.
 PREMADE = {"adam": "pNInz6obpgDQGcFmaJgB", "rachel": "21m00Tcm4TlvDq8ikWAM", "brian": "nPczCjzI2devNBz1zQrb"}
@@ -119,23 +120,74 @@ class ElevenLabs:
                 return v["voice_id"]
         raise SystemExit(f"ElevenLabs voice '{voice}' not found. Run: python scripts/tts.py voices")
 
+    def _key(self, text: str, vid: str, settings: dict) -> str:
+        return hashlib.sha256(json.dumps([text, vid, self.model, settings], sort_keys=True).encode()).hexdigest()[:24]
+
     def speak(self, text: str, voice: str, speed: float = 1.0) -> tuple[np.ndarray, int]:
+        """Returns audio; also caches ElevenLabs' character alignment so word timings are available
+        (see words()). Uses the with-timestamps endpoint - same price as plain TTS."""
         vid = self.voice_id(voice)
         settings = {**self.settings, "speed": max(0.7, min(1.2, speed))}
-        key = hashlib.sha256(json.dumps([text, vid, self.model, settings], sort_keys=True).encode()).hexdigest()[:24]
-        cached = CACHE / f"el_{key}.wav"
+        key = self._key(text, vid, settings)
+        cached, align = CACHE / f"el_{key}.wav", CACHE / f"el_{key}.json"
         if cached.exists():  # never pay twice for the same line
             sr, a = wavfile.read(cached)
             return a.astype(np.float32) / 32767, sr
-        mp3 = self._request(f"/text-to-speech/{vid}?output_format=mp3_44100_128",
-                            {"text": text, "model_id": self.model, "voice_settings": settings})
+        import base64
+        data = json.loads(self._request(f"/text-to-speech/{vid}/with-timestamps?output_format=mp3_44100_128",
+                                        {"text": text, "model_id": self.model, "voice_settings": settings}))
+        mp3 = base64.b64decode(data["audio_base64"])
         from gc_common import ffbin
         pcm = subprocess.run([ffbin("ffmpeg"), "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
                               "-ac", "1", "-ar", str(SR), "-f", "f32le", "pipe:1"],
                              input=mp3, capture_output=True, check=True).stdout
         audio = np.frombuffer(pcm, np.float32).copy()
         save(cached, audio, SR)
+        al = data.get("alignment") or data.get("normalized_alignment")
+        if al:
+            align.write_text(json.dumps(al), encoding="utf-8")
         return audio, SR
+
+    def alignment(self, text: str, voice: str, speed: float = 1.0) -> dict | None:
+        settings = {**self.settings, "speed": max(0.7, min(1.2, speed))}
+        p = CACHE / f"el_{self._key(text, self.voice_id(voice), settings)}.json"
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+def words(k, text: str, voice: str, speed: float, duration: float) -> list[tuple[str, float, float]]:
+    """Spoken words with (start, end) seconds inside the line. Exact for ElevenLabs (character alignment);
+    estimated from character counts otherwise. Audio tags like [excited] are not shown as words."""
+    al = k.alignment(text, voice, speed) if isinstance(k, ElevenLabs) else None
+    out: list[tuple[str, float, float]] = []
+    if al:
+        chars, st, en = al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]
+        cur, s0, e0, in_tag = "", None, None, False
+        for c, s, e in zip(chars, st, en):
+            if c == "[":
+                in_tag = True
+            if in_tag:
+                if c == "]":
+                    in_tag = False
+                continue
+            if c.isspace():
+                if cur:
+                    out.append((cur, s0, e0))
+                cur, s0 = "", None
+                continue
+            cur += c
+            s0 = s if s0 is None else s0
+            e0 = e
+        if cur:
+            out.append((cur, s0, e0))
+        return out
+    plain = re.sub(r"\[[^\]]*\]", "", text).split()
+    total = sum(len(w) + 1 for w in plain) or 1
+    t = 0.0
+    for w in plain:
+        d = duration * (len(w) + 1) / total
+        out.append((w, t, t + d))
+        t += d
+    return out
 
 
 # ------------------------------------------------------------------ engine selection

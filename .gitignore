@@ -29,6 +29,11 @@ input/
 *.flac
 
 # ---- Generated output ----
+# Video content (edit plans, scripts, upload notes, renders) stays local. The two example EDLs that were
+# committed earlier remain tracked as format examples.
+exports/
+# Reference PDFs (content plans) stay local
+*.pdf
 analysis/
 models/
 tests/fixtures/

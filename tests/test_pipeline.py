@@ -215,6 +215,9 @@ class TestElevenLabsOffline(unittest.TestCase):
             if path == "/voices":
                 return json.dumps({"voices": [{"name": "Narrator - Deep, Resonant", "voice_id": "A" * 20,
                                                "category": "premade"}]}).encode()
+            if "with-timestamps" in path:   # speak() uses the timestamps endpoint: JSON with base64 audio
+                import base64
+                return json.dumps({"audio_base64": base64.b64encode(mp3).decode(), "alignment": None}).encode()
             return mp3
         el._request = fake_request
         return el, calls

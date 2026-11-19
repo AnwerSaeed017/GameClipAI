@@ -21,13 +21,51 @@ from gc_common import ANALYSIS_DIR, iter_frames, list_videos, probe
 TW, TH, LABEL = 240, 135, 150
 
 
+def write_pages(frames, out: Path) -> int:
+    """frames: iterable of (t_seconds, RGB uint8 array). Writes 6x5 pages of 320x180 tiles, time-stamped."""
+    cols, rows, tw, th = 6, 5, 320, 180
+    out.mkdir(parents=True, exist_ok=True)
+    for old in out.glob("page_*.jpg"):  # our own previous output only
+        old.unlink()
+    try:
+        font = ImageFont.truetype("arialbd.ttf", 16)
+    except OSError:
+        font = ImageFont.load_default()
+    page, n_pages, k = None, 0, 0
+    for t, f in frames:
+        if k % (cols * rows) == 0:
+            if page is not None:
+                n_pages += 1
+                page.save(out / f"page_{n_pages:02d}.jpg", quality=82)
+            page = Image.new("RGB", (cols * tw, rows * th), (10, 10, 10))
+        x, y = (k % cols) * tw, (k % (cols * rows)) // cols * th
+        img = Image.fromarray(f)
+        if img.size != (tw, th):
+            img = img.resize((tw, th))
+        page.paste(img, (x, y))
+        d = ImageDraw.Draw(page)
+        label = f"{int(t // 3600)}:{int(t % 3600 // 60):02d}:{int(t % 60):02d}" if t >= 3600 else \
+            f"{int(t // 60):02d}:{int(t % 60):02d}"
+        d.rectangle([x + 3, y + 3, x + 12 + 9 * len(label), y + 24], fill=(0, 0, 0))
+        d.text((x + 6, y + 5), label, fill=(255, 220, 0), font=font)
+        k += 1
+    if page is not None:
+        n_pages += 1
+        page.save(out / f"page_{n_pages:02d}.jpg", quality=82)
+    return n_pages
+
+
 def timeline(video: Path, every: float, hwaccel: str = "auto") -> None:
     """Whole-session pages: 6 columns x 5 rows of 320x180 frames, each stamped with its time."""
     info = probe(video)
     if hwaccel == "auto":
         hwaccel = "d3d11va" if (info.is_hdr or "10" in info.pix_fmt) else "none"
-    cols, rows, tw, th = 6, 5, 320, 180
     out = ANALYSIS_DIR / video.stem / "timeline"
+    frames = ((i * every, f) for i, f in enumerate(iter_frames(info, 320, 180, 1.0 / every, hwaccel=hwaccel)))
+    n = write_pages(frames, out)
+    print(f"{n} pages (every {every:g}s) -> {out}")
+    return
+    cols, rows, tw, th = 6, 5, 320, 180
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob("page_*.jpg"):  # our own previous output only
         old.unlink()
