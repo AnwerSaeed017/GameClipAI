@@ -19,6 +19,9 @@ for the shared rules (no cutscenes, no radio music, confirm scripts before Eleve
   `#19052D`; CTA as a pink pill. Use the per-caption overrides in `captions.py`.
 - **Hard cuts** (`fade_in`/`fade_out` 0); only the last segment fades out (0.4 s).
 - Pick bright clips; check night footage on tone-mapped frames (a dark stretch reads as black on a phone).
+  Lift night/interior segments with `"gamma": 1.3–1.5` (optional `"brightness"`); compare a before/after frame first.
+- Cold open on the funniest line over gameplay (no blurred card) when the story has a payoff to tease; quote
+  in-game dialogue as big captions copied exactly from the game's subtitles.
 
 ```json
 {"segments": [

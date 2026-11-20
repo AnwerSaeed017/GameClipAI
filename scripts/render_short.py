@@ -71,6 +71,10 @@ def segment_graph(seg: dict, info, dur: float, workdir: Path, idx: int, encoder:
     tm = tonemap_chain(info)
     if tm:
         pre.append(tm + ",format=yuv420p")
+    if seg.get("gamma") or seg.get("brightness"):
+        # lift dark (night/interior) footage so it reads on a phone: "gamma": 1.4, optional "brightness": 0.03
+        pre.append(f"eq=gamma={float(seg.get('gamma', 1.0))}:brightness={float(seg.get('brightness', 0.0))}"
+                   f":saturation=1.08")
     sp_v, sp_a = speed_filters(seg)
     pre_s = sp_v + ((",".join(pre) + ",") if pre else "")
     last_fmt = "nv12" if encoder == "qsv" else "yuv420p"
